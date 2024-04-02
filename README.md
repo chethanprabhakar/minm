@@ -1,6 +1,6 @@
-# Smache
+# Minm
 
-This is a simple Flutter app to add and manage books.
+This is a simple Flutter app to catalog, manage and share books with the community.
 
 ## Features
 
