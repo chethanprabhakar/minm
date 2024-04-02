@@ -35,7 +35,6 @@ migrate_working_dir/
 /linux/
 /macos/
 
-
 # Symbolication related
 app.*.symbols
 
@@ -46,4 +45,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-.fvm/flutter_sdk
+
+# FVM Version Cache
+.fvm/
+.fvm/fvm_config.json
