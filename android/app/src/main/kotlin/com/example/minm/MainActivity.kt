@@ -1,4 +1,4 @@
-package app.minm.dev
+package app.minm.stage
 
 import io.flutter.embedding.android.FlutterActivity
 
