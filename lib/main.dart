@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -8,91 +13,70 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'Books App',
-      home: MyHomePage(),
+      home: HomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  MyHomePageState createState() => MyHomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class MyHomePageState extends State<MyHomePage> {
-  final _formKey = GlobalKey<FormState>();
+class HomePageState extends State<HomePage> {
+  String _bookDetails = 'No book scanned yet';
 
-  final _bookNameController = TextEditingController();
-  final _authorController = TextEditingController();
-  final _publisherController = TextEditingController();
-  final _barcodeController = TextEditingController();
+  Future<void> scanBarcodeAndFetchBookDetails() async {
+    // Step 1: Scan the barcode
+    String barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
+        "#ff6666", "Cancel", true, ScanMode.BARCODE);
+
+    if (!mounted) return;
+
+    if (barcodeScanRes == '-1') {
+      setState(() {
+        _bookDetails = 'Scanning Cancelled';
+      });
+      return;
+    }
+
+    // Step 2: Fetch book details
+    final String url =
+        'https://openlibrary.org/api/books?bibkeys=ISBN:$barcodeScanRes&format=json&jscmd=data';
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = json.decode(response.body);
+      setState(() {
+        _bookDetails = json.encode(
+            data['ISBN:$barcodeScanRes']); // Simple string representation
+      });
+    } else {
+      setState(() {
+        _bookDetails = 'Failed to load book details';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Book'),
+        title: const Text('Book Scanner'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TextFormField(
-                controller: _bookNameController,
-                decoration: const InputDecoration(labelText: 'Book Name'),
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter the book name';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _authorController,
-                decoration: const InputDecoration(labelText: 'Author'),
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter the author';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _publisherController,
-                decoration: const InputDecoration(labelText: 'Publisher'),
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter the publisher';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _barcodeController,
-                decoration: const InputDecoration(labelText: 'Barcode'),
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please scan or enter the barcode';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Save book data
-                  }
-                },
-                child: const Text('Submit'),
-              ),
-            ],
-          ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(_bookDetails),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: scanBarcodeAndFetchBookDetails,
+              child: const Text('Scan Barcode and Fetch Details'),
+            ),
+          ],
         ),
       ),
     );
