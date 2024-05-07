@@ -1,30 +1,38 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:minm/main.dart';
+import 'package:mockito/mockito.dart';
+
+class MockBarcodeScanner extends Mock implements BarcodeScanner {}
+
+class MockBookDetailsFetcher extends Mock implements BookDetailsFetcher {}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Book details test', (WidgetTester tester) async {
+    // Create mock classes
+    final mockBarcodeScanner = MockBarcodeScanner();
+    final mockBookDetailsFetcher = MockBookDetailsFetcher();
+
+    // Use when() to specify how the mock classes should behave
+    when(mockBarcodeScanner.scanBarcode())
+        .thenAnswer((_) async => '1234567890');
+    when(mockBookDetailsFetcher.fetchBookDetails('1234567890'))
+        .thenAnswer((_) async => 'Mock Book Details');
+
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(
+      barcodeScanner: mockBarcodeScanner,
+      bookDetailsFetcher: mockBookDetailsFetcher,
+    ));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify that our book details start with 'No book scanned yet'.
+    expect(find.text('No book scanned yet'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    // Tap the 'Scan Barcode and Fetch Details' button and trigger a frame.
+    await tester.tap(find.text('Scan Barcode and Fetch Details'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that our book details have been updated.
+    expect(find.text('No book scanned yet'), findsNothing);
+    expect(find.text('Mock Book Details'), findsOneWidget);
   });
 }

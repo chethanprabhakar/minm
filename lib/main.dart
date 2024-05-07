@@ -4,34 +4,52 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp(
+    barcodeScanner: RealBarcodeScanner(),
+    bookDetailsFetcher: RealBookDetailsFetcher(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final BarcodeScanner barcodeScanner;
+  final BookDetailsFetcher bookDetailsFetcher;
+
+  MyApp({required this.barcodeScanner, required this.bookDetailsFetcher});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomePage(),
+    return MaterialApp(
+      home: HomePage(
+        barcodeScanner: barcodeScanner,
+        bookDetailsFetcher: bookDetailsFetcher,
+      ),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final BarcodeScanner barcodeScanner;
+  final BookDetailsFetcher bookDetailsFetcher;
+
+  HomePage({required this.barcodeScanner, required this.bookDetailsFetcher});
 
   @override
-  HomePageState createState() => HomePageState();
+  HomePageState createState() => HomePageState(
+        barcodeScanner: barcodeScanner,
+        bookDetailsFetcher: bookDetailsFetcher,
+      );
 }
 
 class HomePageState extends State<HomePage> {
+  final BarcodeScanner barcodeScanner;
+  final BookDetailsFetcher bookDetailsFetcher;
   String _bookDetails = 'No book scanned yet';
 
+  HomePageState(
+      {required this.barcodeScanner, required this.bookDetailsFetcher});
+
   Future<void> scanBarcodeAndFetchBookDetails() async {
-    // Step 1: Scan the barcode
-    String barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-        "#ff6666", "Cancel", true, ScanMode.BARCODE);
+    String barcodeScanRes = await barcodeScanner.scanBarcode();
 
     if (!mounted) return;
 
@@ -42,22 +60,12 @@ class HomePageState extends State<HomePage> {
       return;
     }
 
-    // Step 2: Fetch book details
-    final String url =
-        'https://openlibrary.org/api/books?bibkeys=ISBN:$barcodeScanRes&format=json&jscmd=data';
-    final response = await http.get(Uri.parse(url));
+    String bookDetails =
+        await bookDetailsFetcher.fetchBookDetails(barcodeScanRes);
 
-    if (response.statusCode == 200) {
-      Map<String, dynamic> data = json.decode(response.body);
-      setState(() {
-        _bookDetails = json.encode(
-            data['ISBN:$barcodeScanRes']); // Simple string representation
-      });
-    } else {
-      setState(() {
-        _bookDetails = 'Failed to load book details';
-      });
-    }
+    setState(() {
+      _bookDetails = bookDetails;
+    });
   }
 
   @override
@@ -80,5 +88,37 @@ class HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+}
+
+abstract class BarcodeScanner {
+  Future<String> scanBarcode();
+}
+
+class RealBarcodeScanner implements BarcodeScanner {
+  @override
+  Future<String> scanBarcode() {
+    return FlutterBarcodeScanner.scanBarcode(
+        "#ff6666", "Cancel", true, ScanMode.BARCODE);
+  }
+}
+
+abstract class BookDetailsFetcher {
+  Future<String> fetchBookDetails(String barcode);
+}
+
+class RealBookDetailsFetcher implements BookDetailsFetcher {
+  @override
+  Future<String> fetchBookDetails(String barcode) async {
+    final String url =
+        'https://openlibrary.org/api/books?bibkeys=ISBN:$barcode&format=json&jscmd=data';
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = json.decode(response.body);
+      return json.encode(data['ISBN:$barcode']);
+    } else {
+      return 'Failed to load book details';
+    }
   }
 }
