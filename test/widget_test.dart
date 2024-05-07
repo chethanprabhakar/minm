@@ -7,12 +7,15 @@ class MockBarcodeScanner extends Mock implements BarcodeScanner {}
 class MockBookDetailsFetcher extends Mock implements BookDetailsFetcher {}
 
 void main() {
-  testWidgets('Book details test', (WidgetTester tester) async {
-    // Create mock classes
-    final mockBarcodeScanner = MockBarcodeScanner();
-    final mockBookDetailsFetcher = MockBookDetailsFetcher();
+  late MockBarcodeScanner mockBarcodeScanner;
+  late MockBookDetailsFetcher mockBookDetailsFetcher;
 
-    // Use when() to specify how the mock classes should behave
+  setUp(() {
+    mockBarcodeScanner = MockBarcodeScanner();
+    mockBookDetailsFetcher = MockBookDetailsFetcher();
+  });
+
+  testWidgets('Book details test', (WidgetTester tester) async {
     when(mockBarcodeScanner.scanBarcode())
         .thenAnswer((_) async => '1234567890');
     when(mockBookDetailsFetcher.fetchBookDetails('1234567890'))
