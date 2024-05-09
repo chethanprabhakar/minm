@@ -14,7 +14,10 @@ class MyApp extends StatelessWidget {
   final BarcodeScanner barcodeScanner;
   final BookDetailsFetcher bookDetailsFetcher;
 
-  MyApp({required this.barcodeScanner, required this.bookDetailsFetcher});
+  const MyApp(
+      {super.key,
+      required this.barcodeScanner,
+      required this.bookDetailsFetcher});
 
   @override
   Widget build(BuildContext context) {
@@ -31,22 +34,27 @@ class HomePage extends StatefulWidget {
   final BarcodeScanner barcodeScanner;
   final BookDetailsFetcher bookDetailsFetcher;
 
-  HomePage({required this.barcodeScanner, required this.bookDetailsFetcher});
+  const HomePage({
+    Key? key,
+    required this.barcodeScanner,
+    required this.bookDetailsFetcher,
+  }) : super(key: key);
 
   @override
-  HomePageState createState() => HomePageState(
-        barcodeScanner: barcodeScanner,
-        bookDetailsFetcher: bookDetailsFetcher,
-      );
+  HomePageState createState() => HomePageState();
 }
 
 class HomePageState extends State<HomePage> {
-  final BarcodeScanner barcodeScanner;
-  final BookDetailsFetcher bookDetailsFetcher;
+  late BarcodeScanner barcodeScanner;
+  late BookDetailsFetcher bookDetailsFetcher;
   String _bookDetails = 'No book scanned yet';
 
-  HomePageState(
-      {required this.barcodeScanner, required this.bookDetailsFetcher});
+  @override
+  void initState() {
+    super.initState();
+    barcodeScanner = widget.barcodeScanner;
+    bookDetailsFetcher = widget.bookDetailsFetcher;
+  }
 
   Future<void> scanBarcodeAndFetchBookDetails() async {
     String barcodeScanRes = await barcodeScanner.scanBarcode();
